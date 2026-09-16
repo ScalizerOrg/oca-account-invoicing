@@ -17,7 +17,7 @@ class TestAccountInvoiceRefundReason(TransactionCase):
         cls.invoice_refund_obj = cls.env["account.move.reversal"]
         cls.reason_obj = cls.env["account.move.refund.reason"]
 
-        cls.payment_term = cls.env.ref("account.account_payment_term_advance")
+        cls.payment_term = cls.env.ref("account.account_payment_term_advance_60days")
         cls.partner3 = cls.env.ref("base.res_partner_3")
         cls.product_id = cls.env.ref("product.product_product_5")
 
@@ -66,13 +66,12 @@ class TestAccountInvoiceRefundReason(TransactionCase):
             )
         )
 
-    def create_refund_wizard(self, active_ids=None, **values):
+    def create_refund_wizard(self, active_ids=None, refund_method="refund", **values):
         """Helper function to create a refund wizard"""
         if not active_ids:
             active_ids = self.account_invoice_customer0.ids
 
         create_values = dict(
-            refund_method="refund",
             date=datetime.date.today(),
             reason_id=self.reason_id.id,
             journal_id=self.account_invoice_customer0.journal_id.id,
@@ -81,6 +80,10 @@ class TestAccountInvoiceRefundReason(TransactionCase):
         account_invoice_refund = self.invoice_refund_obj.with_context(
             active_model="account.move", active_ids=active_ids
         ).create(create_values)
+        if refund_method == "refund":
+            account_invoice_refund.refund_moves()
+        else:
+            account_invoice_refund.modify_moves()
         self.assertEqual(
             account_invoice_refund.reason,
             account_invoice_refund.reason_id.name,
